@@ -19,7 +19,9 @@
                         <tr>
                             <th></th>
                             <th>Producto</th>
-                            <th>Precio</th>
+                            <th>Talla</th>
+                            <th>Color</th>
+                            <th>Precio unitario</th>
                             <th>Cantidad</th>
                             <th>Subtotal</th>
                             <th></th>
@@ -35,7 +37,15 @@
                                         <div class="vs-thumb" style="background:var(--blue-bg);"></div>
                                     <?php endif; ?>
                                 </td>
-                                <td><?php echo e($item['nombre']); ?></td>
+                                <td>
+                                    <?php echo e($item['nombre']); ?>
+
+                                    <?php if($item['insuficiente']): ?>
+                                        <br><span class="vs-badge-agotado">Solo quedan <?php echo e($item['stock_actual']); ?> disponibles</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?php echo e($item['talla']); ?></td>
+                                <td><?php echo e($item['color']); ?></td>
                                 <td>
                                     <?php if($item['tiene_descuento']): ?>
                                         $<?php echo e(number_format($item['precio_final'], 0, ',', '.')); ?>
@@ -49,7 +59,7 @@
                                 <td style="max-width:120px;">
                                     <form method="POST" action="<?php echo e(route('carrito.actualizar', $id)); ?>" class="d-flex gap-2">
                                         <?php echo csrf_field(); ?>
-                                        <input type="number" name="cantidad" value="<?php echo e($item['cantidad']); ?>" min="1"
+                                        <input type="number" name="cantidad" value="<?php echo e($item['cantidad']); ?>" min="1" max="<?php echo e($item['stock_actual']); ?>"
                                                class="vs-form-control" style="padding:6px 8px; font-size:13px;">
                                         <button type="submit" class="vs-btn-sm">↻</button>
                                     </form>

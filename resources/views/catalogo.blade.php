@@ -82,6 +82,12 @@
                             <div class="vs-prod-body flex-grow-1 d-flex flex-column">
                                 <p class="vs-prod-cat">{{ $producto->categoria->Nombre ?? 'Sin categoría' }}</p>
                                 <p class="vs-prod-name">{{ $producto->Nombre }}</p>
+                                @if($producto->inventario->isNotEmpty())
+                                    <p style="font-size:11px; color:var(--dim); margin-bottom:.4rem;">
+                                        {{ $producto->inventario->pluck('Color')->unique()->implode(' / ') }}
+                                        · Tallas: {{ $producto->inventario->pluck('Talla')->unique()->implode(', ') }}
+                                    </p>
+                                @endif
                                 @if($producto->tieneDescuento())
                                     <p class="vs-prod-price">
                                         ${{ number_format($producto->precioFinal(), 0, ',', '.') }}
@@ -95,11 +101,15 @@
                                     @if($producto->tieneDescuento())
                                         <span class="vs-badge">-{{ rtrim(rtrim(number_format($producto->promocionVigente()->PorcentajeDescuento, 2), '0'), '.') }}%</span>
                                     @endif
-                                    <form action="{{ route('carrito.agregar', $producto->IdProducto) }}" method="POST">
-                                        @csrf
-                                        <input type="hidden" name="cantidad" value="1">
-                                        <button type="submit" class="vs-btn-carrito">+ Carrito</button>
-                                    </form>
+                                    @if($producto->inventario->count() === 1)
+                                        <form action="{{ route('carrito.agregar', $producto->inventario->first()->IdInventario) }}" method="POST">
+                                            @csrf
+                                            <input type="hidden" name="cantidad" value="1">
+                                            <button type="submit" class="vs-btn-carrito">+ Carrito</button>
+                                        </form>
+                                    @else
+                                        <a href="{{ route('catalogo.show', $producto->IdProducto) }}" class="vs-btn-carrito" style="text-decoration:none;">Elegir variante</a>
+                                    @endif
                                 </div>
                             </div>
                         </div>

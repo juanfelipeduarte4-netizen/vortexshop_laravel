@@ -81,6 +81,14 @@
                             <div class="vs-prod-body flex-grow-1 d-flex flex-column">
                                 <p class="vs-prod-cat"><?php echo e($producto->categoria->Nombre ?? 'Sin categoría'); ?></p>
                                 <p class="vs-prod-name"><?php echo e($producto->Nombre); ?></p>
+                                <?php if($producto->inventario->isNotEmpty()): ?>
+                                    <p style="font-size:11px; color:var(--dim); margin-bottom:.4rem;">
+                                        <?php echo e($producto->inventario->pluck('Color')->unique()->implode(' / ')); ?>
+
+                                        · Tallas: <?php echo e($producto->inventario->pluck('Talla')->unique()->implode(', ')); ?>
+
+                                    </p>
+                                <?php endif; ?>
                                 <?php if($producto->tieneDescuento()): ?>
                                     <p class="vs-prod-price">
                                         $<?php echo e(number_format($producto->precioFinal(), 0, ',', '.')); ?>
@@ -95,11 +103,15 @@
                                     <?php if($producto->tieneDescuento()): ?>
                                         <span class="vs-badge">-<?php echo e(rtrim(rtrim(number_format($producto->promocionVigente()->PorcentajeDescuento, 2), '0'), '.')); ?>%</span>
                                     <?php endif; ?>
-                                    <form action="<?php echo e(route('carrito.agregar', $producto->IdProducto)); ?>" method="POST">
-                                        <?php echo csrf_field(); ?>
-                                        <input type="hidden" name="cantidad" value="1">
-                                        <button type="submit" class="vs-btn-carrito">+ Carrito</button>
-                                    </form>
+                                    <?php if($producto->inventario->count() === 1): ?>
+                                        <form action="<?php echo e(route('carrito.agregar', $producto->inventario->first()->IdInventario)); ?>" method="POST">
+                                            <?php echo csrf_field(); ?>
+                                            <input type="hidden" name="cantidad" value="1">
+                                            <button type="submit" class="vs-btn-carrito">+ Carrito</button>
+                                        </form>
+                                    <?php else: ?>
+                                        <a href="<?php echo e(route('catalogo.show', $producto->IdProducto)); ?>" class="vs-btn-carrito" style="text-decoration:none;">Elegir variante</a>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>

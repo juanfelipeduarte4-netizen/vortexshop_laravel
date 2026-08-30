@@ -38,7 +38,8 @@ class ProductoController extends Controller
             'Color'       => 'required|string|max:50',
             'Talla'       => 'required|string|max:20',
             'Stock'       => 'required|integer|min:0',
-            'Imagen'      => 'nullable|image|max:2048',
+            'Imagenes'    => 'nullable|array',
+            'Imagenes.*'  => 'image|max:2048',
         ]);
 
         $producto = Producto::create([
@@ -58,16 +59,17 @@ class ProductoController extends Controller
             'Estado'     => $datos['Stock'] > 0 ? 'disponible' : 'agotado',
         ]);
 
-        if ($request->hasFile('Imagen')) {
-            $archivo = $request->file('Imagen');
-            $ruta = $archivo->store('productos', 'public');
+        if ($request->hasFile('Imagenes')) {
+            foreach ($request->file('Imagenes') as $archivo) {
+                $ruta = $archivo->store('productos', 'public');
 
-            Imagen::create([
-                'IdProducto' => $producto->IdProducto,
-                'Formato'    => $archivo->getClientOriginalExtension(),
-                'Tamano'     => $archivo->getSize(),
-                'Ruta'       => $ruta,
-            ]);
+                Imagen::create([
+                    'IdProducto' => $producto->IdProducto,
+                    'Formato'    => $archivo->getClientOriginalExtension(),
+                    'Tamano'     => $archivo->getSize(),
+                    'Ruta'       => $ruta,
+                ]);
+            }
         }
 
         return redirect()->route('admin.productos.index')->with('exito', 'Producto creado.');
@@ -93,7 +95,8 @@ class ProductoController extends Controller
             'Color'       => 'required|string|max:50',
             'Talla'       => 'required|string|max:20',
             'Stock'       => 'required|integer|min:0',
-            'Imagen'      => 'nullable|image|max:2048',
+            'Imagenes'    => 'nullable|array',
+            'Imagenes.*'  => 'image|max:2048',
         ]);
 
         $producto->update([
@@ -123,24 +126,32 @@ class ProductoController extends Controller
             ]);
         }
 
-        if ($request->hasFile('Imagen')) {
-            $archivo = $request->file('Imagen');
-            $ruta = $archivo->store('productos', 'public');
+        // Eliminar las imágenes que el usuario marcó para quitar
+        if ($request->filled('eliminar_imagenes')) {
+            $imagenesABorrar = Imagen::where('IdProducto', $producto->IdProducto)
+                ->whereIn('IdImagen', $request->input('eliminar_imagenes'))
+                ->get();
 
-            // Borra la imagen física anterior (opcional, evita basura en disco)
-            $anterior = Imagen::where('IdProducto', $producto->IdProducto)->first();
-            if ($anterior && Storage::disk('public')->exists($anterior->Ruta)) {
-                Storage::disk('public')->delete($anterior->Ruta);
+            foreach ($imagenesABorrar as $img) {
+                if (Storage::disk('public')->exists($img->Ruta)) {
+                    Storage::disk('public')->delete($img->Ruta);
+                }
+                $img->delete();
             }
+        }
 
-            Imagen::updateOrCreate(
-                ['IdProducto' => $producto->IdProducto],
-                [
-                    'Formato' => $archivo->getClientOriginalExtension(),
-                    'Tamano'  => $archivo->getSize(),
-                    'Ruta'    => $ruta,
-                ]
-            );
+        // Agregar las imágenes nuevas que se hayan subido, sin tocar las que ya quedaron
+        if ($request->hasFile('Imagenes')) {
+            foreach ($request->file('Imagenes') as $archivo) {
+                $ruta = $archivo->store('productos', 'public');
+
+                Imagen::create([
+                    'IdProducto' => $producto->IdProducto,
+                    'Formato'    => $archivo->getClientOriginalExtension(),
+                    'Tamano'     => $archivo->getSize(),
+                    'Ruta'       => $ruta,
+                ]);
+            }
         }
 
         return redirect()->route('admin.productos.index')->with('exito', 'Producto actualizado.');
@@ -148,16 +159,19 @@ class ProductoController extends Controller
 
     public function destroy($id)
     {
+        // Baja lógica: la vista index ofrece "Reactivar" después, así que
+        // nunca se borra el producto ni sus imágenes/inventario físicamente.
         $producto = Producto::findOrFail($id);
+        $producto->update(['Estado' => 'inactivo']);
 
-        $imagen = Imagen::where('IdProducto', $producto->IdProducto)->first();
-        if ($imagen && Storage::disk('public')->exists($imagen->Ruta)) {
-            Storage::disk('public')->delete($imagen->Ruta);
-        }
-        Imagen::where('IdProducto', $producto->IdProducto)->delete();
-        Inventario::where('IdProducto', $producto->IdProducto)->delete();
-        $producto->delete();
+        return redirect()->route('admin.productos.index')->with('exito', 'Producto dado de baja.');
+    }
 
-        return redirect()->route('admin.productos.index')->with('exito', 'Producto eliminado.');
+    public function reactivar($id)
+    {
+        $producto = Producto::findOrFail($id);
+        $producto->update(['Estado' => 'activo']);
+
+        return redirect()->route('admin.productos.index')->with('exito', 'Producto reactivado.');
     }
 }

@@ -5,6 +5,7 @@
 @php
     $inventarioActual = $producto->inventario->first();
     $imagenActual = $producto->imagenes->first();
+    $todasLasImagenes = $producto->imagenes;
 @endphp
 
 <h2 class="vs-page-title">Editar <em>Producto</em></h2>
@@ -72,19 +73,30 @@
                 </div>
             </div>
 
-            {{-- La imagen vive en la tabla imagen, no en producto --}}
+            {{-- Las imágenes viven en la tabla imagen, no en producto --}}
             <div class="inf-card">
-                <h5 class="inf-section-title" style="font-size:.9rem;">Imagen</h5>
-                <label class="vs-dropzone" for="in-imagen" id="dropzone">
-                    @if($imagenActual)
-                        <img id="preview-img-input" src="{{ asset('storage/' . $imagenActual->Ruta) }}" style="display:block;">
-                    @else
-                        <span id="dropzone-texto">Haz clic para elegir una imagen<br><small style="color:var(--dim);">JPG o PNG, máx. 2MB</small></span>
-                        <img id="preview-img-input" style="display:none;">
-                    @endif
+                <h5 class="inf-section-title" style="font-size:.9rem;">Imágenes</h5>
+
+                @if($todasLasImagenes->isNotEmpty())
+                    <p class="vs-form-label">Imágenes actuales — marca las que quieras borrar</p>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        @foreach($todasLasImagenes as $img)
+                            <label class="vs-imagen-existente">
+                                <img src="{{ asset('storage/' . $img->Ruta) }}">
+                                <span>
+                                    <input type="checkbox" name="eliminar_imagenes[]" value="{{ $img->IdImagen }}">
+                                    Borrar
+                                </span>
+                            </label>
+                        @endforeach
+                    </div>
+                @endif
+
+                <label class="vs-dropzone" for="in-imagenes" id="dropzone">
+                    <span id="dropzone-texto">Haz clic para agregar más imágenes<br><small style="color:var(--dim);">JPG o PNG, máx. 2MB c/u</small></span>
                 </label>
-                <input type="file" name="Imagen" id="in-imagen" accept="image/*" class="d-none">
-                <small style="color:var(--muted); font-size:11px; display:block; margin-top:.5rem;">Deja en blanco para conservar la imagen actual.</small>
+                <input type="file" name="Imagenes[]" id="in-imagenes" accept="image/*" multiple class="d-none">
+                <div id="miniaturas-nuevas" class="d-flex flex-wrap gap-2 mt-2"></div>
             </div>
 
             <div class="d-flex gap-2 mt-3">
@@ -132,16 +144,26 @@
 
     $('in-stock').addEventListener('input', e => { $('preview-stock').textContent = 'Stock: ' + (e.target.value || 0); });
 
-    $('in-imagen').addEventListener('change', e => {
-        const archivo = e.target.files[0];
-        if (!archivo) return;
-        const url = URL.createObjectURL(archivo);
-        $('preview-img').src = url;
+    $('in-imagenes').addEventListener('change', e => {
+        const archivos = Array.from(e.target.files);
+        if (archivos.length === 0) return;
+
+        const texto = $('dropzone-texto'); if (texto) texto.style.display = 'none';
+
+        const contenedor = $('miniaturas-nuevas');
+        contenedor.innerHTML = '';
+        archivos.forEach(archivo => {
+            const url = URL.createObjectURL(archivo);
+            const img = document.createElement('img');
+            img.src = url;
+            img.style.cssText = 'width:60px; height:60px; object-fit:cover; border-radius:3px; border:1px solid var(--border);';
+            contenedor.appendChild(img);
+        });
+
+        const primeraUrl = URL.createObjectURL(archivos[0]);
+        $('preview-img').src = primeraUrl;
         $('preview-img').style.display = 'block';
         $('preview-img-placeholder').style.display = 'none';
-        $('preview-img-input').src = url;
-        $('preview-img-input').style.display = 'block';
-        const texto = $('dropzone-texto'); if (texto) texto.style.display = 'none';
     });
 </script>
 @endsection

@@ -69,14 +69,14 @@
                 </div>
             </div>
 
-            {{-- Sección: imagen --}}
+            {{-- Sección: imágenes --}}
             <div class="inf-card">
-                <h5 class="inf-section-title" style="font-size:.9rem;">Imagen</h5>
-                <label class="vs-dropzone" for="in-imagen" id="dropzone">
-                    <span id="dropzone-texto">Haz clic para elegir una imagen<br><small style="color:var(--dim);">JPG o PNG, máx. 2MB</small></span>
-                    <img id="preview-img-input" style="display:none;">
+                <h5 class="inf-section-title" style="font-size:.9rem;">Imágenes</h5>
+                <label class="vs-dropzone" for="in-imagenes" id="dropzone">
+                    <span id="dropzone-texto">Haz clic para elegir una o varias imágenes<br><small style="color:var(--dim);">JPG o PNG, máx. 2MB c/u</small></span>
                 </label>
-                <input type="file" name="Imagen" id="in-imagen" accept="image/*" class="d-none">
+                <input type="file" name="Imagenes[]" id="in-imagenes" accept="image/*" multiple class="d-none">
+                <div id="miniaturas-nuevas" class="d-flex flex-wrap gap-2 mt-2"></div>
             </div>
 
             <div class="d-flex gap-2 mt-3">
@@ -137,18 +137,27 @@
         $('preview-stock').textContent = 'Stock: ' + (e.target.value || 0);
     });
 
-    $('in-imagen').addEventListener('change', e => {
-        const archivo = e.target.files[0];
-        if (!archivo) return;
-        const url = URL.createObjectURL(archivo);
+    $('in-imagenes').addEventListener('change', e => {
+        const archivos = Array.from(e.target.files);
+        if (archivos.length === 0) return;
 
-        $('preview-img').src = url;
+        $('dropzone-texto').style.display = 'none';
+
+        const contenedor = $('miniaturas-nuevas');
+        contenedor.innerHTML = '';
+        archivos.forEach(archivo => {
+            const url = URL.createObjectURL(archivo);
+            const img = document.createElement('img');
+            img.src = url;
+            img.style.cssText = 'width:60px; height:60px; object-fit:cover; border-radius:3px; border:1px solid var(--border);';
+            contenedor.appendChild(img);
+        });
+
+        // La primera imagen elegida alimenta la vista previa del catálogo, a la derecha
+        const primeraUrl = URL.createObjectURL(archivos[0]);
+        $('preview-img').src = primeraUrl;
         $('preview-img').style.display = 'block';
         $('preview-img-placeholder').style.display = 'none';
-
-        $('preview-img-input').src = url;
-        $('preview-img-input').style.display = 'block';
-        $('dropzone-texto').style.display = 'none';
     });
 </script>
 @endsection

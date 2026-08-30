@@ -21,7 +21,9 @@
                         <tr>
                             <th></th>
                             <th>Producto</th>
-                            <th>Precio</th>
+                            <th>Talla</th>
+                            <th>Color</th>
+                            <th>Precio unitario</th>
                             <th>Cantidad</th>
                             <th>Subtotal</th>
                             <th></th>
@@ -37,7 +39,14 @@
                                         <div class="vs-thumb" style="background:var(--blue-bg);"></div>
                                     @endif
                                 </td>
-                                <td>{{ $item['nombre'] }}</td>
+                                <td>
+                                    {{ $item['nombre'] }}
+                                    @if($item['insuficiente'])
+                                        <br><span class="vs-badge-agotado">Solo quedan {{ $item['stock_actual'] }} disponibles</span>
+                                    @endif
+                                </td>
+                                <td>{{ $item['talla'] }}</td>
+                                <td>{{ $item['color'] }}</td>
                                 <td>
                                     @if($item['tiene_descuento'])
                                         ${{ number_format($item['precio_final'], 0, ',', '.') }}
@@ -49,7 +58,7 @@
                                 <td style="max-width:120px;">
                                     <form method="POST" action="{{ route('carrito.actualizar', $id) }}" class="d-flex gap-2">
                                         @csrf
-                                        <input type="number" name="cantidad" value="{{ $item['cantidad'] }}" min="1"
+                                        <input type="number" name="cantidad" value="{{ $item['cantidad'] }}" min="1" max="{{ $item['stock_actual'] }}"
                                                class="vs-form-control" style="padding:6px 8px; font-size:13px;">
                                         <button type="submit" class="vs-btn-sm">↻</button>
                                     </form>
